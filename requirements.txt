@@ -1,0 +1,7 @@
+datasets==4.0.0
+matplotlib==3.10.3
+numpy==2.1.2
+pandas==2.3.1
+rouge-score==0.1.2
+tqdm==4.67.1
+vllm==0.16.0
