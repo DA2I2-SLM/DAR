@@ -37,7 +37,7 @@ def engine_vllm_batch(messages, agent, num_agents=1, stop_sequences=None, top_k_
         temperature=1.0,
         top_p=0.9,
         max_tokens=512,
-        seed=seed,
+        # seed=seed, # Remove seed to avoid redundant responses
         stop=stop_sequences if stop_sequences else ["<|im_end|>", "<|endoftext|>"],
         logprobs=1  
     )
