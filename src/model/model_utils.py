@@ -30,7 +30,8 @@ def engine_vllm_batch(messages, agent, num_agents=1, stop_sequences=None, top_k_
     if type(messages[0]) == list:
         prompts = [agent.tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True) for msgs in messages]
     else:
-        prompts = [agent.tokenizer.apply_chat_template([msg], tokenize=False, add_generation_prompt=True) for msg in messages]
+        prompts = [msg['content'] for msg in messages] # observe better performance during debate
+        # [agent.tokenizer.apply_chat_template([msg], tokenize=False, add_generation_prompt=True) for msg in messages]
     
     # 2. Setup vLLM SamplingParams
     sampling_params = SamplingParams(
