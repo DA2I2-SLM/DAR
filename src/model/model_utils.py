@@ -223,6 +223,7 @@ def get_agents(args):
         #         seed=args.seed,
         #         # dtype="bfloat16" # Use mixed precision for faster inference and reduced memory usage if your GPU supports it (e.g., NVIDIA Ampere or later)
         #     ) # Model for filtering answers
+        # TODO: might be do not load this to save memory
 
     else:
         agent = vLLM(args, model_dirs[args.model])
