@@ -3,7 +3,7 @@ from datetime import datetime
 import ast
 import re
 import os
-from model.model_utils import engine_vllm_batch
+from model.model_utils import engine_vllm_batch, engine_hf
 
 # --- PEER SELECTION TOPOLOGY ---
 def get_peers(i, agents, args):
@@ -148,12 +148,20 @@ def run_filter_batch(
         Criteria: choose all agents that seem relevant.
         """
 
-    chosen, uncertain, filter_tokens = engine_vllm_batch(
-        [{'role': 'user', 'content': filter_prompt}],
-        llm,
-        1,
-        seed=args.seed
-    )
+    if args.use_hf_inference:
+        chosen, uncertain, filter_tokens = engine_hf(
+            [{'role': 'user', 'content': filter_prompt}],
+            llm,
+            1,
+            seed=args.seed
+        )
+    else:
+        chosen, uncertain, filter_tokens = engine_vllm_batch(
+            [{'role': 'user', 'content': filter_prompt}],
+            llm,
+            1,
+            seed=args.seed
+        )
     
     raw = chosen[0].strip()
 
@@ -265,12 +273,21 @@ def run_filter_batch_across_samples(batch_inputs, args, llm):
         llm_indices.append(idx)
 
     if len(llm_messages) > 0:
-        chosen, uncertain, token_stats = engine_vllm_batch(
-            llm_messages,
-            llm,
-            1,
-            seed=args.seed
-        )
+        if args.use_hf_inference:
+            chosen, uncertain, token_stats = engine_hf(
+                llm_messages,
+                llm,
+                len(llm_messages),
+                seed=args.seed
+            )
+            
+        else:
+            chosen, uncertain, token_stats = engine_vllm_batch(
+                llm_messages,
+                llm,
+                1,
+                seed=args.seed
+            )
 
         for local_i, global_i in enumerate(llm_indices):
             peers = batch_inputs[global_i]["peers"]

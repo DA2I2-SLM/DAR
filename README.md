@@ -80,6 +80,9 @@ python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_s
 
 # Our Method: Vote Prompt + Filter Critical
 python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical
+
+# Ours Method: Huggingface Model (no vLLM)
+python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --use_hf_inference
 ```
 
 #### 4. Analysis

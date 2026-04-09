@@ -11,7 +11,7 @@ from rouge_score import rouge_scorer
 ROUGE = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'])
 
 import re
-from model.model_utils import get_agents, engine_vllm_batch
+from model.model_utils import get_agents, engine_vllm_batch, engine_hf
 from data.data_utils import load_data
 from evaluator import get_instruction_suffix, evaluate_arithmetics, evaluate_mcq, base_evaluate_arithmetics, base_evaluate_mcq, evaluate_gen
 import ast
@@ -49,6 +49,7 @@ def get_args():
 
     # model
     parser.add_argument('--model', type=str, default="qwen2.5-3b")
+    parser.add_argument('--use_hf_inference', action='store_true')
 
 
     # debate
@@ -79,7 +80,7 @@ def get_args():
 def main(args):
 
     # Load Agents
-    if args.separate_moderator != 'None':
+    if (args.separate_moderator != 'None'):
         # Two LLM instances on the same GPU: split VRAM equally
         args.gpu_memory_utilization = 0.45
 
@@ -167,7 +168,10 @@ def main(args):
             round_0_messages.extend([{"role": "user", "content": x + SUFFIX}] * args.num_agents)
 
     # Batch inference for Round 0
-    all_responses, all_uncertain_scores, token_stats = engine_vllm_batch(round_0_messages, agent, args.num_agents, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt, seed=args.seed)
+    if args.use_hf_inference:
+        all_responses, all_uncertain_scores, token_stats = engine_hf(round_0_messages, agent, args.num_agents, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt)
+    else:
+        all_responses, all_uncertain_scores, token_stats = engine_vllm_batch(round_0_messages, agent, args.num_agents, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt, seed=args.seed)
 
     # Calculate actual agents per sample post-filtering
     agents_per_sample_r0 = len(all_responses) // num_samples
@@ -295,7 +299,10 @@ def main(args):
         current_num_agents_per_sample = len(round_r_messages) // num_samples
 
         # Batch Inference
-        all_responses, all_uncertain_scores, token_stats = engine_vllm_batch(round_r_messages, moderator, current_num_agents_per_sample, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt, seed=args.seed)
+        if args.use_hf_inference:
+            all_responses, all_uncertain_scores, token_stats = engine_hf(round_r_messages, moderator, current_num_agents_per_sample, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt)
+        else:
+            all_responses, all_uncertain_scores, token_stats = engine_vllm_batch(round_r_messages, moderator, current_num_agents_per_sample, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt, seed=args.seed)
 
         end_time = time.time()
         agents_per_sample_r = len(all_responses) // num_samples
@@ -415,6 +422,11 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
 
+    if args.use_hf_inference:
+        with open('token','r') as f :
+            token = f.read()
+        args.token = token
+    
     timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     args.timestamp = timestamp
 
