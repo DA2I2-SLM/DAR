@@ -87,6 +87,9 @@ def main(args):
     
     if args.data in ['arithmetics', 'gsm8k', 'formal_logic', 'hh_rlhf']:
         args.use_hf_inference = True # we found hf inference is better for math problems
+        with open('token','r') as f :
+            token = f.read()
+        args.token = token
 
     agent, personas = get_agents(args)
     
@@ -142,11 +145,6 @@ def main(args):
         raise NotImplementedError
 
     
-    # Debate
-    sample_responses = []
-    iscorr_list = []
-
-
     # ---------------------------------------------------------
     # BATCHED PROCESSING OPTIMIZATION FOR vLLM
     # ---------------------------------------------------------
@@ -278,9 +276,7 @@ def main(args):
                     agent_responses,
                     personas,
                     suffix=SUFFIX,
-                    llm=moderator,
                     last_vote_ans=last_vote_ans,
-                    last_round_final_ans=final_resps,
                     precomputed_retained_ids=precomputed_retained_ids,
                     precomputed_filter_tokens=precomputed_filter_tokens
                 )
@@ -290,9 +286,7 @@ def main(args):
                     x,
                     agent_responses,
                     suffix=SUFFIX,
-                    llm=moderator,
                     last_vote_ans=last_vote_ans,
-                    last_round_final_ans=final_resps,
                     precomputed_retained_ids=precomputed_retained_ids,
                     precomputed_filter_tokens=precomputed_filter_tokens
                 )
@@ -425,11 +419,6 @@ if __name__ == "__main__":
     random.seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
-
-    if args.use_hf_inference:
-        with open('token','r') as f :
-            token = f.read()
-        args.token = token
     
     timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     args.timestamp = timestamp

@@ -94,94 +94,6 @@ def build_normal_msg_with_ids_batch(peers, responses, last_vote_ans=None):
         
     return msg
 
-def run_filter_batch(
-    peers,
-    responses,
-    args,
-    llm,
-    last_vote_ans,
-    last_round_final_ans=None
-):
-    if len(peers) <= 1:
-        return peers, None   # nothing to filter
-
-    message_with_ids = build_normal_msg_with_ids_batch(peers=peers, responses=responses, last_vote_ans=last_vote_ans)
-
-    sub_role = args.m_role.split("_")[1] if "_" in args.m_role else "general"
-
-    filter_prompt = f"""
-    Your ONLY task is to choose a subset of agent_ids.
-    Return ONLY a Python-style list of agent_ids.
-    Valid agent IDs: {peers}
-
-    Responses from agents: {message_with_ids}
-    """
-
-    if sub_role == "certain":
-        filter_prompt += "Criteria: choose the most certain agents."
-    elif sub_role == "support":
-        filter_prompt += "Criteria: choose agents whose opinions are most similar to yours."
-    elif sub_role == "disagree":
-        filter_prompt += "Criteria: choose agents whose opinions differ the most."
-    elif sub_role == "critical":
-        filter_prompt += "Criteria: choose agents whose opinions differ the most and differ to majority vote answer."
-    elif sub_role == 'nonindex':
-        filter_prompt = f"""
-            Your ONLY task is to choose a subset of responses.
-            Return ONLY a Python-style list of responses.
-
-            Responses from agents: {message_with_ids}
-            Criteria: choose responses whose opinions differ the most and differ to majority vote answer.
-            """
-        
-    elif sub_role in ["vote", "nonvote"] and last_vote_ans is not None:
-        if sub_role == "vote":
-            selected = [p for i, p in enumerate(peers) if last_round_final_ans[i] == last_vote_ans]
-        else:
-            selected = [p for i, p in enumerate(peers) if last_round_final_ans[i] != last_vote_ans]
-
-        print(f"Original peers {peers}, filtered peers: {selected}")
-        return selected if selected else peers, None
-                
-    else:
-        filter_prompt += """
-        Criteria: choose all agents that seem relevant.
-        """
-
-    if args.use_hf_inference:
-        chosen, uncertain, filter_tokens = engine_hf(
-            [{'role': 'user', 'content': filter_prompt}],
-            llm,
-            1,
-            seed=args.seed
-        )
-    else:
-        chosen, uncertain, filter_tokens = engine_vllm_batch(
-            [{'role': 'user', 'content': filter_prompt}],
-            llm,
-            1,
-            seed=args.seed
-        )
-    
-    raw = chosen[0].strip()
-
-    match = re.findall(r'\[.*?\]', raw, re.DOTALL)
-    last_list = match[-1] if match else "[]"
-
-    try:
-        parsed = ast.literal_eval(last_list)
-    except:
-        parsed = []
-
-    if sub_role == 'nonindex':
-        # parsed is a list of responses, need to map back to agent IDs
-        response_to_agent = {responses[pid]: pid for pid in peers}
-        selected = [response_to_agent[resp] for resp in parsed if resp in response_to_agent]
-        
-    selected = [a for a in parsed if a in peers]
-
-    return selected if len(selected) > 0 else peers, filter_tokens
-
 
 def build_filter_prompt_batch(peers, responses, args, last_vote_ans=None):
     message_with_ids = build_normal_msg_with_ids_batch(peers=peers, responses=responses, last_vote_ans=last_vote_ans)
@@ -303,9 +215,9 @@ def get_new_message_global(
     responses,
     personas=None,
     suffix=None,
-    llm=None,
+    # llm=None,
     last_vote_ans=None, 
-    last_round_final_ans=None,
+    # last_round_final_ans=None,
     precomputed_retained_ids=None,
     precomputed_filter_tokens=None
 ):
@@ -317,33 +229,19 @@ def get_new_message_global(
     # DAR
     filtered_peers_map = None
     if multi_agent and args.m_role.startswith("filter"):        
-        if precomputed_retained_ids is None:
-            # run ONCE
-            retained_ids, filter_tokens = run_filter_batch(
-                peers=agents,
-                responses=responses,
-                args=args,
-                llm=llm,
-                last_vote_ans=last_vote_ans,
-                last_round_final_ans=last_round_final_ans
-            )
-        else:
-            retained_ids = precomputed_retained_ids
-            filter_tokens = precomputed_filter_tokens
 
-        # build map: agent -> peers subset
         filtered_peers_map = {}
         for agent in agents:
-            filtered_peers_map[agent] = [a for a in retained_ids if a != agent]
+            filtered_peers_map[agent] = [a for a in precomputed_retained_ids if a != agent]
             
         token_logger.log(
             question=sample,
             current_agent_id="GLOBAL",
             current_response="N/A",
-            peer_agent_ids=retained_ids,
-            responses=f"Retained IDs: {retained_ids}, Filter Tokens: {filter_tokens}",
+            peer_agent_ids=precomputed_retained_ids,
+            responses=f"Retained IDs: {precomputed_retained_ids}, Filter Tokens: {precomputed_filter_tokens}",
             fname=args.fname,
-            extra={"filter_tokens": filter_tokens}
+            extra={"filter_tokens": precomputed_filter_tokens}
         )
         
     for i, agent in enumerate(agents):

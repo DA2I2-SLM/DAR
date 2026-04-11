@@ -208,3 +208,7 @@ __marimo__/
 token
 
 result/
+bash/
+log_output/
+log_error/
+out/
