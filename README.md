@@ -47,7 +47,7 @@ The explicit run commands for each full dataset benchmark are provided in `scrip
 
 For example, to run the Arithmetics dataset on Qwen2.5-3b-Instruct:
 ```bash
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2
 ```
 To run Sparse or Centralized topologies, append `--sparse` or `--centralized`. To enable heterogeneous agent personas, append `--multi_persona`.
 
@@ -67,30 +67,30 @@ To run Sparse or Centralized topologies, append `--sparse` or `--centralized`. T
 
 ```bash
 # Base
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2
 
 # Filter top 50% most certain answers
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --top_k_uncertainty 0.5
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --top_k_uncertainty 0.5
 
 # Uncertain Prompt
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True
 
 # Vote Prompt
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --vote_prompt True
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --vote_prompt True
 
 # Our Method: Vote Prompt + Filter Critical
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical
 
-# Ours Method: Huggingface Model (no vLLM) (adjust batch size with `--hf_batch_size` for memory constraints)
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --use_hf_inference --hf_batch_size 16
+# Ours Method: Huggingface Model (no vLLM - we found that hf inference is better on MATH datasets) (adjust batch size with `--hf_batch_size` for memory constraints)
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --use_hf_inference --hf_batch_size 16
 ```
 
 #### 4. Analysis
 ```bash
 # Retaining criteria
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_certain
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_support
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_nonvote
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_certain
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_support
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_nonvote
 
 # Separate Moderator
 python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --separate_moderator qwen2.5-1.5b
