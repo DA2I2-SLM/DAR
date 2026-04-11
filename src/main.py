@@ -50,6 +50,7 @@ def get_args():
     # model
     parser.add_argument('--model', type=str, default="qwen2.5-3b")
     parser.add_argument('--use_hf_inference', action='store_true')
+    parser.add_argument('--hf_batch_size', type=int, default=1)
 
 
     # debate
@@ -172,7 +173,7 @@ def main(args):
 
     # Batch inference for Round 0
     if args.use_hf_inference:
-        all_responses, all_uncertain_scores, token_stats = engine_hf(round_0_messages, agent, args.num_agents, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt)
+        all_responses, all_uncertain_scores, token_stats = engine_hf(round_0_messages, agent, args.num_agents, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt, hf_batch_size=args.hf_batch_size)
     else:
         all_responses, all_uncertain_scores, token_stats = engine_vllm_batch(round_0_messages, agent, args.num_agents, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt, seed=args.seed)
 
@@ -303,7 +304,7 @@ def main(args):
 
         # Batch Inference
         if args.use_hf_inference:
-            all_responses, all_uncertain_scores, token_stats = engine_hf(round_r_messages, moderator, current_num_agents_per_sample, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt)
+            all_responses, all_uncertain_scores, token_stats = engine_hf(round_r_messages, moderator, current_num_agents_per_sample, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt, hf_batch_size=args.hf_batch_size)
         else:
             all_responses, all_uncertain_scores, token_stats = engine_vllm_batch(round_r_messages, moderator, current_num_agents_per_sample, top_k_uncertainty=args.top_k_uncertainty, uncertainty_metric=args.uncertainty_metric, uncertainty_prompt=args.uncertainty_prompt, seed=args.seed)
 

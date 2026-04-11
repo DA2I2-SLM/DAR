@@ -277,8 +277,7 @@ def run_filter_batch_across_samples(batch_inputs, args, llm):
             chosen, uncertain, token_stats = engine_hf(
                 llm_messages,
                 llm,
-                len(llm_messages),
-                seed=args.seed
+                len(llm_messages)
             )
             
         else:

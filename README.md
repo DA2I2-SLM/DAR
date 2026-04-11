@@ -81,8 +81,8 @@ python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_s
 # Our Method: Vote Prompt + Filter Critical
 python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical
 
-# Ours Method: Huggingface Model (no vLLM)
-python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --use_hf_inference
+# Ours Method: Huggingface Model (no vLLM) (adjust batch size with `--hf_batch_size` for memory constraints)
+python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --use_hf_inference --hf_batch_size 16
 ```
 
 #### 4. Analysis

@@ -24,85 +24,102 @@ from vllm import SamplingParams, LLM
 from model.vllm import vLLM
 import torch
 
-def engine_hf(messages, agent, num_agents=1, stop_sequences=None, top_k_uncertainty=None, uncertainty_metric='anll', uncertainty_prompt=None):
-    if type(messages[0]) == list :
-        prompts = [agent.tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True) for msgs in messages]
-    else :
-        prompts = [msg['content'] for msg in messages]  # assume messages are already formatted as strings
-    inputs = agent.tokenizer(prompts, return_tensors='pt', padding=True, truncation=True)
-
-    input_ids = inputs['input_ids'].to(agent.huggingface_model.device)
-    attention_mask = inputs['attention_mask'].to(agent.huggingface_model.device)
-
-    generate_kwargs = dict(
-        input_ids=input_ids,
-        attention_mask=attention_mask,
-        pad_token_id=agent.tokenizer.eos_token_id,
-        max_new_tokens=512,
-        return_dict_in_generate=True,
-        output_scores=True,
-        do_sample=True,
-        temperature=1.0,
-        top_p=0.9,
-        num_return_sequences=1,
-    )
+def engine_hf(messages, agent, num_agents=1, stop_sequences=None, top_k_uncertainty=None, uncertainty_metric='anll', uncertainty_prompt=None, hf_batch_size=1):
+    all_responses = []
+    all_nll_scores = []
     
-    model_name = getattr(agent.huggingface_model.config, "name_or_path", "").lower()
-    if "gemma" in model_name:
-        generate_kwargs["use_cache"] = False
-        # remove legacy flag if exists
-    else:
-        generate_kwargs["return_legacy_cache"] = True
-    
-    outputs = agent.huggingface_model.generate(**generate_kwargs)
-    generated_sequences = outputs.sequences  # shape: (batch_size * num_agents, seq_len)
-
-    responses = []
-    nll_scores = []
-    # for prompt, sequence in zip(prompts, generated_sequences):
-    for input_id, sequence in zip(input_ids, generated_sequences):
-        gen_only = sequence[len(input_id):]
-        decoded = agent.tokenizer.decode(gen_only, skip_special_tokens=True)
-
-        # calculate uncertainty of each response and select top-k certain responses. Compute average NLL using model loss
-        input_len = len(input_id)
-        with torch.no_grad():
-            target_ids = sequence.clone()
-            target_ids[:input_len] = -100  # ignore prompt tokens
-            out = agent.huggingface_model(sequence.unsqueeze(0), labels=target_ids.unsqueeze(0))
-            average_nll = out.loss.item()
-            nll = average_nll * (len(sequence) - input_len)
-
-        responses.append(decoded)
-        nll_scores.append((average_nll, nll))
-
-    # Apply top-K or threshold-based uncertainty filter (keep lowest NLL/ANLL = most certain)
-    if top_k_uncertainty is not None:
-        if uncertainty_metric == 'nll':
-            ranked = sorted(zip(responses, nll_scores), key=lambda x: x[1][1])  # sort by NLL
-        elif uncertainty_metric == 'anll':
-            ranked = sorted(zip(responses, nll_scores), key=lambda x: x[1][0])  # sort by ANLL
-        else:
-            raise ValueError("invalid uncertainty metric!")
-
-        if top_k_uncertainty < 1:
-            k = int(len(responses) * top_k_uncertainty)
-            k = max(k, 1)  # ensure at least one is selected
-            responses, nll_scores = zip(*ranked[:k])
-        elif top_k_uncertainty < len(responses):
-            # Top-K mode: convert float to int safely
-            k = int(round(top_k_uncertainty))
-            k = min(k, len(ranked))  # avoid overshooting
-            responses, nll_scores = zip(*ranked[:k])
+    # Process in chunks of hf_batch_size to avoid OOM
+    for i in range(0, len(messages), hf_batch_size):
+        chunk_messages = messages[i:i + hf_batch_size]
         
-        responses = list(responses)
-    
-    if uncertainty_prompt not in [None, 'None']:
-        for i, response in enumerate(responses):
-            response += f"\n\nUncertainty score (Average Negative Log Likelihood) for this response: {nll_scores[i][0]:.4f}"
-            responses[i] = response
+        if type(chunk_messages[0]) == list :
+            prompts = [agent.tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True) for msgs in chunk_messages]
+        else :
+            prompts = [msg['content'] for msg in chunk_messages]  # assume messages are already formatted as strings
+        
+        inputs = agent.tokenizer(prompts, return_tensors='pt', padding=True, truncation=True)
+        input_ids = inputs['input_ids'].to(agent.huggingface_model.device)
+        attention_mask = inputs['attention_mask'].to(agent.huggingface_model.device)
 
-    return responses, nll_scores, None  # token stats not available in this implementation
+        generate_kwargs = dict(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            pad_token_id=agent.tokenizer.eos_token_id,
+            max_new_tokens=512,
+            return_dict_in_generate=True,
+            output_scores=True,
+            do_sample=True,
+            temperature=1.0,
+            top_p=0.9,
+            num_return_sequences=1,
+        )
+        
+        model_name = getattr(agent.huggingface_model.config, "name_or_path", "").lower()
+        if "gemma" in model_name:
+            generate_kwargs["use_cache"] = False
+        else:
+            generate_kwargs["return_legacy_cache"] = True
+        
+        outputs = agent.huggingface_model.generate(**generate_kwargs)
+        generated_sequences = outputs.sequences  # shape: (batch_size * num_agents, seq_len)
+
+        for input_id, sequence in zip(input_ids, generated_sequences):
+            gen_only = sequence[len(input_id):]
+            decoded = agent.tokenizer.decode(gen_only, skip_special_tokens=True)
+
+            # calculate uncertainty of each response
+            input_len = len(input_id)
+            with torch.no_grad():
+                target_ids = sequence.clone()
+                target_ids[:input_len] = -100  # ignore prompt tokens
+                out = agent.huggingface_model(sequence.unsqueeze(0), labels=target_ids.unsqueeze(0))
+                average_nll = out.loss.item()
+                nll = average_nll * (len(sequence) - input_len)
+
+            all_responses.append(decoded)
+            all_nll_scores.append((average_nll, nll))
+
+    # Apply top-K or threshold-based uncertainty filter PER SAMPLE (Chunking)
+    # consistent with engine_vllm_batch
+    final_responses = []
+    final_nll_scores = []
+    
+    chunk_size = num_agents
+    for i in range(0, len(all_responses), chunk_size):
+        chunk_resps = all_responses[i:i + chunk_size]
+        chunk_nlls = all_nll_scores[i:i + chunk_size]
+        
+        if top_k_uncertainty is not None:
+            if uncertainty_metric == 'nll':
+                ranked = sorted(zip(chunk_resps, chunk_nlls), key=lambda x: x[1][1])  # sort by NLL
+            elif uncertainty_metric == 'anll':
+                ranked = sorted(zip(chunk_resps, chunk_nlls), key=lambda x: x[1][0])  # sort by ANLL
+            else:
+                raise ValueError("invalid uncertainty metric!")
+
+            if top_k_uncertainty < 1:
+                k = int(len(chunk_resps) * top_k_uncertainty)
+                k = max(k, 1)  # ensure at least one is selected
+            elif top_k_uncertainty < len(chunk_resps):
+                # Top-K mode: convert float to int safely
+                k = int(round(top_k_uncertainty))
+                k = min(k, len(ranked))  # avoid overshooting
+            else:
+                k = len(chunk_resps)
+                
+            chunk_resps, chunk_nlls = zip(*ranked[:k])
+            chunk_resps = list(chunk_resps)
+            chunk_nlls = list(chunk_nlls)
+        
+        if uncertainty_prompt not in [None, 'None']:
+            for j in range(len(chunk_resps)):
+                chunk_resps[j] += f"\n\nUncertainty score (Average Negative Log Likelihood) for this response: {chunk_nlls[j][0]:.4f}"
+        
+        final_responses.extend(chunk_resps)
+        final_nll_scores.extend(chunk_nlls)
+
+    return final_responses, final_nll_scores, None  # token stats not available in this implementation
+
 
 
 def engine_vllm_batch(messages, agent, num_agents=1, stop_sequences=None, top_k_uncertainty=None, uncertainty_metric='anll', uncertainty_prompt=None, seed=None):
