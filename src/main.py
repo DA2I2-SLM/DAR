@@ -85,8 +85,7 @@ def main(args):
         # Two LLM instances on the same GPU: split VRAM equally
         args.gpu_memory_utilization = 0.45
     
-    if args.data in ['arithmetics', 'gsm8k', 'formal_logic', 'hh_rlhf']:
-        args.use_hf_inference = True # we found hf inference is better for math problems
+    if args.use_hf_inference == True: # we found hf inference is better for math problems
         with open('token','r') as f :
             token = f.read()
         args.token = token

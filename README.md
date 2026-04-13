@@ -53,15 +53,14 @@ To run Sparse or Centralized topologies, append `--sparse` or `--centralized`. T
 
 #### 1. List of models
 
-- `Qwen2.5-1.5B, 3B, 7B`
+- `Qwen2.5-1.5B, 3B`
 - `Llama3.1-8B`
 - `Falcon3-7B`
 
 #### 2. Supported benchmarks
 
 - Math: Arithmetics, GSM8K
-- QA: MMLU (Form. Log.), HH-RLHF
-- Others: HellaSwag, MMLU (Pro. Medicine), CommonSenseQA
+- QA: MMLU (Form. Log., Pro. Medicine), HH-RLHF, CommonSenseQA
 
 #### 3. Baselines
 
@@ -77,13 +76,26 @@ python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data
 
 # Vote Prompt
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --vote_prompt True
+```
 
-# Our Method: Vote Prompt + Filter Critical
+**Our Method: DAR = Uncertainty Prompt + Voting + Critical Filtering**
+
+1. vLLM Inference
+
+```bash
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical
+```
 
-# Ours Method: Huggingface Model (no vLLM - we found that hf inference is better on MATH datasets) (adjust batch size with `--hf_batch_size` for memory constraints)
+2. Hugging Face Inference
+
+(Adjust batch size via --hf_batch_size based on available memory)
+
+```bash
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --use_hf_inference --hf_batch_size 16
 ```
+
+> We observe that Hugging Face inference performs better on mathematical datasets, and therefore report results using this setting for those benchmarks.
+> To enable `--use_hf_inference`, provide your Hugging Face API token in a file named `token` containing a single line with the key.
 
 #### 4. Analysis
 ```bash
@@ -98,7 +110,7 @@ python src/main.py --model qwen2.5-3b --num_agents 4 --data arithmetics --data_s
 
 #### 5. Simple Run for validation
 
-This script will run a quick validation of the entire method with Qwen2.5-3B with one fixed seed. Note that due to non-determinism in sampling (e.g., vLLM back-end), results may vary slightly across runs. Thats why we run multiple seeds and report averages with standard deviations in the paper.
+This script will run a quick validation of the entire method with Qwen2.5-1.5B with one fixed seed. Note that due to non-determinism in sampling (e.g., vLLM back-end), results may vary slightly across runs. Thats why we run multiple seeds and report averages with standard deviations in the paper.
 ```bash
 python scripts/validate.sh
 ```

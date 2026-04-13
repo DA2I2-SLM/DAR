@@ -5,7 +5,7 @@ python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --top_k_uncertainty 0.5 --seed 42
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --seed 42
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --vote_prompt True --seed 42
-python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --seed 42
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --seed 42 --use_hf_inference --hf_batch_size 16
 
 # GSM8K with qwen2.5-1.5b
 python src/main.py --model qwen2.5-1.5b --num_agents 1 --data gsm8k --data_size 300 --debate_rounds 1 --seed 42
@@ -14,7 +14,7 @@ python src/main.py --model qwen2.5-1.5b --num_agents 4 --data gsm8k --data_size 
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data gsm8k --data_size 300 --debate_rounds 2 --top_k_uncertainty 0.5 --seed 42
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data gsm8k --data_size 300 --debate_rounds 2 --uncertainty_prompt True --seed 42
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data gsm8k --data_size 300 --debate_rounds 2 --vote_prompt True --seed 42
-python src/main.py --model qwen2.5-1.5b --num_agents 4 --data gsm8k --data_size 300 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --seed 42
+python src/main.py --model qwen2.5-1.5b --num_agents 4 --data gsm8k --data_size 300 --debate_rounds 2 --uncertainty_prompt True --vote_prompt True --m_role filter_critical --seed 42 --use_hf_inference --hf_batch_size 16
 
 # HH-RLHF with qwen2.5-1.5b
 python src/main.py --model qwen2.5-1.5b --num_agents 1 --data hh_rlhf --data_size 300 --debate_rounds 1 --seed 42
