@@ -1,5 +1,5 @@
 <div align="center">
-<img src="darlogo.webp" height=200>
+<img src="asset/darlogo.webp" height=200>
   <h1><b> DAR Library: Diversity-Aware Retention for Multi-Agent Debate </b></h1>
   <p><i>Fast, modular, and diversity-aware — the open-source library for Multi-Agent Debate research.</i></p>
 </div>
@@ -38,6 +38,12 @@
    + 🔵 **Uncertainty Prompt:** agents signal their confidence alongside their answers
    + 🗳️ **Vote Prompt:** agents vote across candidate answers to surface consensus
    + ✂️ **Critical Filtering:** only messages that challenge or diversify the consensus are retained for the next round
+- DAR delivers cost savings by streamlining agent communication, reducing message volume by up to 30–40%.
+- DAR scales seamlessly with agent growth, driving significant gains in performance (see example below).
+  
+<div align="center">
+<img src="asset/daracc.png" height=200>
+</div>
 
 📜 For more details, check out our [paper](https://arxiv.org/abs/2603.20640).
 Please feel free to open issues or pull requests. We're constantly working to improve and expand the library.
