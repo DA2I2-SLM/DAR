@@ -6,7 +6,7 @@
 
 <div align="center">
 
-[![LICENSE](https://img.shields.io/badge/License-Apache-green)](https://github.com/DA2I2-SLM/DAR/blob/main/LICENSE)
+[![LICENSE](https://img.shields.io/badge/License-MIT-green)](https://github.com/DA2I2-SLM/DAR/blob/main/LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10-blue)](https://www.python.org/)
 [![vLLM](https://img.shields.io/badge/Powered_by-vLLM-orange)](https://github.com/vllm-project/vllm)
 [![arXiv](https://img.shields.io/badge/Paper-arXiv:2603.20640-red)](https://arxiv.org/abs/2603.20640)
