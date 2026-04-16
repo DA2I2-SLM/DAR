@@ -97,7 +97,8 @@ Run a [basic MAD](https://arxiv.org/abs/2305.14325) experiment on the Arithmetic
 ```bash
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2
 ```
-![Demo Animation](./assets/dar_screenshot.gif)
+If set up properly on H100 GPU, it should take less than 1 minute to finish the experiments!
+![Demo Animation](./asset/dar_screenshot.gif)
 
 **Topology flags** (append to any command):
 - Default: fully-connected
