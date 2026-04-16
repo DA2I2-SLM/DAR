@@ -97,6 +97,7 @@ Run a [basic MAD](https://arxiv.org/abs/2305.14325) experiment on the Arithmetic
 ```bash
 python src/main.py --model qwen2.5-1.5b --num_agents 4 --data arithmetics --data_size 100 --debate_rounds 2
 ```
+![Demo Animation](./assets/dar_screenshot.gif)
 
 **Topology flags** (append to any command):
 - Default: fully-connected
@@ -269,3 +270,6 @@ Any contribution you can make is welcome. Feel free to open issues, suggest feat
 
 * [Debate or Vote](https://github.com/deeplearning-wisc/debate-or-vote)
 * [vLLM](https://github.com/vllm-project/vllm)
+
+## About us
+This work is a team effort: @manhitv leads the development, @tienanh28122000 drives inference acceleration and experiments, and @thaihungle supervises the project.
