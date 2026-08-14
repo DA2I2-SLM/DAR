@@ -260,8 +260,7 @@ DAR/
 - [X] DAR method (Uncertainty + Voting + Critical Filtering)
 - [X] Math benchmarks (Arithmetics, GSM8K)
 - [X] QA benchmarks (MMLU, HH-RLHF, CommonSenseQA)
-- [ ] AIME24 / AIME25 support
-- [ ] Test on other LLMs
+- [ ] Extend to heterogeneous setting
 
 Any contribution you can make is welcome. Feel free to open issues, suggest features, or submit pull requests!
 
