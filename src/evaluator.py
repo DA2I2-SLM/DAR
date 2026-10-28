@@ -41,17 +41,43 @@ def get_instruction_suffix(args):
 
 
 
+NUM = r"-?\d[\d,]*(?:\.\d+)?|-?\.\d+"
+
+def extract_number(response):
+    # The previous regex r"\{(.*?)\}" fails on LaTeX-escaped braces (\{309\}), nested braces
+    # (\boxed{\{25.33\}}), units/commas ({final answer: $350}, 1,234) and unbraced "final answer: 124".
+    t = response.replace("\\{", "{").replace("\\}", "}").replace("$", "")
+    m = re.findall(r"final answer\s*[:=]?\s*(?:\\[a-z]+\{)?\s*(" + NUM + ")", t, re.IGNORECASE)
+    if m:
+        return float(m[-1].replace(",", ""))
+    for g in list(re.finditer(r"\{([^{}]*)\}", t))[::-1]:
+        pre = t[:g.start()]
+        if pre.endswith("}") or pre.endswith("\\frac") or pre.endswith("^") or pre.endswith("_"):
+            continue  # fraction denominators, exponents, subscripts
+        s = g.group(1).replace(",", "").strip()
+        if re.fullmatch(NUM, s):
+            return float(s)
+    return None
+
+def extract_choice(response, letters="ABCDE"):
+    t = response.replace("\\{", "{").replace("\\}", "}").replace("$", "")
+    m = re.findall(r"(?i:final answer)\s*(?:\*\*)?\s*[:=]?\s*(?:\\text\{|\\textbf\{|\*\*)?\s*\(?\s*([" + letters + r"])\s*\)?(?![A-Za-z])", t)
+    if m:
+        return f"({m[-1]})"
+    for g in list(re.finditer(r"\{([^{}]*)\}", t))[::-1]:
+        mm = re.fullmatch(r"\s*\(?\s*([" + letters + r"])\s*\)?(?:\s.*)?", g.group(1), re.DOTALL)
+        if mm:
+            return f"({mm.group(1)})"
+    return None
+
+
 def evaluate_arithmetics(responses, answer):
     # Returns True if corret, False if incorrect
     final_answers = []
     for _, response in responses.items():
 
-        try:
-            pred = re.findall(r"\{(.*?)\}", response)[-1]
-            pred = float(pred.replace("final answer:", "").strip())
-            final_answers.append(np.round(pred, 1))
-        except :
-            final_answers.append("")
+        pred = extract_number(response)
+        final_answers.append(np.round(pred, 1) if pred is not None else "")
 
 
     if len(set(final_answers)) == 1 and list(set(final_answers))[0] == "":
@@ -71,19 +97,7 @@ def evaluate_mcq(responses, answer):
     final_answers = []
     for _, response in responses.items():
 
-        try:
-            pred = re.findall(r"\{(.*?)\}", response)[-1]
-            pred = pred.replace("final answer:", "").strip()
-            if len(pred) == 0 :
-                final_answers.append("")
-            elif len(pred) < 3 :
-                pred = pred[0]
-                final_answers.append(f"({pred})")
-            else :
-                pred = pred[1]
-                final_answers.append(f"({pred})")
-        except :
-            final_answers.append("")
+        final_answers.append(extract_choice(response) or "")
     
     if len(set(final_answers)) == 1 and list(set(final_answers))[0] == "":
         final_answers = [""] * len(final_answers)
